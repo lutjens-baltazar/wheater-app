@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from urllib.parse import quote
 from weather_models import OpenWeatherModel, WindDirection, OpenMeteoModel
+from persistence import ModelStorage
 
 
 load_dotenv()
@@ -140,7 +141,12 @@ def send_whatsapp_message(message):
 def main():
     mensajes = []
     model_predictions = {}
+    storage = ModelStorage()
     
+    stored_stats = storage.load_stats()
+    for model in weather_models:
+        if model.model_name in stored_stats:
+            model.from_dict(stored_stats[model.model_name])
     print("\n📊 Iniciando verificación de pronósticos...")
     print("==========================================")
     
@@ -181,6 +187,13 @@ def main():
                     model.total_predictions += 1
                     if verify_prediction_accuracy(pred, historical_data):
                         model.accuracy_count += 1
+    # Save updated stats to storage
+    new_stats = {}
+    for model in weather_models:
+        new_stats[model.model_name] = model.to_dict()
+    
+    storage.save_stats(new_stats)
+    
     
     # Generate messages for each model
     for model_name, predictions in model_predictions.items():

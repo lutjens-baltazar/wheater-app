@@ -29,6 +29,17 @@ class OpenMeteoModel:
         self.accuracy_count = 0
         self.total_predictions = 0
     
+    def to_dict(self):
+        return {
+            'model_name': self.model_name,
+            'accuracy_count': self.accuracy_count,
+            'total_predictions': self.total_predictions
+        }
+        
+    def from_dict(self, data):
+        self.accuracy_count = data.get('accuracy_count', 0)
+        self.total_predictions = data.get('total_predictions', 0)
+    
     def get_forecast(self, lat, lon):
         params = {
             'latitude': lat,
