@@ -9,6 +9,9 @@ jobs:
   check-weather:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write
+
     steps:
     - uses: actions/checkout@v2
 
@@ -24,6 +27,7 @@ jobs:
 
     - name: Run weather check
       env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
         EXTERNAL_APPLICATION_KEY: ${{ secrets.EXTERNAL_APPLICATION_KEY }}
         EXTERNAL_API_KEY: ${{ secrets.EXTERNAL_API_KEY }}
