@@ -3,6 +3,8 @@ import requests
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from urllib.parse import quote
+from weather_models import OpenWeatherModel, WindDirection, OpenMeteoModel
+
 
 load_dotenv()
 
@@ -17,13 +19,24 @@ WHATSAPP_PHONE = os.getenv("WHATSAPP_PHONE")
 WHATSAPP_API_KEY = os.getenv("WHATSAPP_API_KEY")
 
 
+
 # Configuration
 LAT = "-40.9286360" 
 LON = "-73.3587130"
-WIND_SPEED_MIN = 3.0  # in m/s
+WIND_SPEED_MIN = 2.5  # in m/s
 WIND_SPEED_MAX = 5.0  # in m/s
 WIND_DIRECTION_MIN = 240  # South
 WIND_DIRECTION_MAX = 300  # West
+
+# Initialize weather models
+weather_models = [
+    OpenMeteoModel('best_match'),
+    OpenMeteoModel('gfs_seamless'),
+    OpenMeteoModel('ecmwf_ifs04'),
+    OpenMeteoModel('metno_nordic'),
+    OpenMeteoModel('gem_seamless')
+]
+
 
 def get_weather_forecast():
     url = f"https://api.openweathermap.org/data/2.5/forecast?lat={LAT}&lon={LON}&appid={OPENWEATHER_API_KEY}"
@@ -56,6 +69,30 @@ def get_historical_data():
 def check_wind_conditions(wind_speed, wind_direction):
     return (WIND_SPEED_MIN <= float(wind_speed) <= WIND_SPEED_MAX and 
             WIND_DIRECTION_MIN <= float(wind_direction) <= WIND_DIRECTION_MAX)
+
+def translate_wind_direction(direction):
+    if 270 <= float(direction) <= 300:
+        return "dirección escuela"
+    elif 240 <= float(direction) < 270:
+        return "dirección plaza"
+    return f"dirección {direction}°"
+
+def verify_prediction_accuracy(prediction, historical_data):
+    data = historical_data.get('data', {}).get('wind', {})
+    wind_speeds = data.get('wind_speed', {}).get('list', {})
+    wind_directions = data.get('wind_direction', {}).get('list', {})
+    
+    pred_timestamp = int(prediction.timestamp.timestamp())
+    
+    for his_timestamp, his_speed in wind_speeds.items():
+        his_timestamp = int(his_timestamp)
+        if abs(his_timestamp - pred_timestamp) <= 1800:  # 30 minutes tolerance
+            his_direction = wind_directions.get(str(his_timestamp))
+            if his_direction:
+                speed_accurate = abs(float(his_speed) - prediction.speed) <= (prediction.speed * 0.2)
+                direction_accurate = abs(float(his_direction) - prediction.direction) <= 30
+                return speed_accurate and direction_accurate
+    return False
 
 
 def process_historical_data(historical_data):
@@ -101,72 +138,82 @@ def send_whatsapp_message(message):
 
 
 def main():
-    # Initialize messages list
     mensajes = []
+    model_predictions = {}
     
-    # Check forecast for next 3 days
-    forecast_data = get_weather_forecast()
-    future_alerts = []
+    print("\n📊 Iniciando verificación de pronósticos...")
+    print("==========================================")
     
-    for item in forecast_data['list']:
-        date = datetime.fromtimestamp(item['dt'])
-        if date <= datetime.now() + timedelta(days=3):
-            wind_speed = item['wind']['speed']
-            wind_direction = item['wind']['deg']
+    # Get predictions from all models
+    for model in weather_models:
+        try:
             
-            if check_wind_conditions(wind_speed, wind_direction):
-                future_alerts.append({
-                    'time': date,
-                    'speed': wind_speed,
-                    'direction': wind_direction
-                })
-
-    # Check historical data for the last 24 hours
+            predictions = model.get_forecast(LAT, LON)
+            future_alerts = []
+            
+            for pred in predictions:
+                if pred.timestamp <= datetime.now() + timedelta(days=3):
+                    if check_wind_conditions(pred.speed, pred.direction):
+                        print(f"  ⚠️ Alerta encontrada:")
+                        print(f"    Modelo: {model.model_name}")
+                        print(f"    Hora: {pred.timestamp}")
+                        print(f"    Velocidad: {pred.speed:.1f} m/s")
+                        print(f"    Dirección: {pred.direction}° ({translate_wind_direction(pred.direction)})")
+                        future_alerts.append(pred)
+            
+            if future_alerts:
+                model_predictions[model.model_name] = future_alerts
+                
+        except Exception as e:
+            print(f"\n❌ Error obteniendo pronóstico de {model.model_name}: {e}")
+    
+    # Get historical data and verify accuracy
     historical_data = get_historical_data()
-    past_alerts = process_historical_data(historical_data)
     
-    # Compose messages
-    if future_alerts:
-        mensajes.append("\n⚠️ ALERTAS DE PRONÓSTICO:")
-        for alert in future_alerts:
-            mensajes.append(
-                f"  - {alert['time'].strftime('%d/%m/%Y %H:%M')}: "
-                f"Velocidad del viento {alert['speed']:.1f} m/s, "
-                f"dirección {alert['direction']}°"
-            )
-        mensajes.append(
-            f"\n⚠️ ADVERTENCIA: Se encontraron {len(future_alerts)} horas "
-            f"con condiciones de viento peligrosas en los próximos 3 días!"
-        )
+    # Update model accuracy with historical data
+    for model in weather_models:
+        model.total_predictions = 0
+        model.accuracy_count = 0
+        if model.model_name in model_predictions:
+            predictions = model_predictions[model.model_name]
+            for pred in predictions:
+                if pred.timestamp <= datetime.now():
+                    model.total_predictions += 1
+                    if verify_prediction_accuracy(pred, historical_data):
+                        model.accuracy_count += 1
     
-    if past_alerts:
-        mensajes.append("\n🔍 VERIFICADO: Condiciones de viento peligrosas ocurrieron en:")
-        for alert_time in past_alerts:
-            mensajes.append(
-                f"  - {alert_time.strftime('%d/%m/%Y %H:%M')}"
-            )
-        mensajes.append(
-            f"\n📢 AVISO: Se encontraron {len(past_alerts)} instancias de "
-            f"condiciones de viento peligrosas en las últimas 24 horas!"
-        )
-
+    # Generate messages for each model
+    for model_name, predictions in model_predictions.items():
+        if predictions:
+            model = next((m for m in weather_models if m.model_name == model_name), None)
+            accuracy = model.get_accuracy_percentage() if model else 0
+            
+            mensajes.append(f"\n⚠️ ALERTAS DE {model_name}:")
+            mensajes.append(f"📊 Precisión del modelo: {accuracy:.1f}%")
+            
+            for pred in predictions:
+                mensajes.append(
+                    f"  - {pred.timestamp.strftime('%d/%m/%Y %H:%M')}: "
+                    f"Velocidad del viento {pred.speed:.1f} m/s, "
+                    f"{translate_wind_direction(pred.direction)}"
+                )
+    
     # Combine all messages into one text
     mensaje_completo = "\n".join(mensajes)
     
-    # Print the complete message
-    # Print the complete message
+    # Print and send the message
     if mensajes:
         print("\nResumen de Alertas:")
         print("==================")
         print(mensaje_completo)
         
-        # Send WhatsApp message if there are alerts
         if send_whatsapp_message(mensaje_completo):
             print("\n✅ Mensaje de WhatsApp enviado correctamente")
         else:
             print("\n❌ Error al enviar mensaje de WhatsApp")
     else:
         print("\nNo se encontraron alertas de viento peligroso.")
+        send_whatsapp_message("No se encontraron alertas de viento peligroso en las próximas 72 horas.")
 
     return mensaje_completo
 if __name__ == "__main__":
