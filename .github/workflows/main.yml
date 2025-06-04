@@ -27,7 +27,7 @@ jobs:
 
     - name: Run weather check
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.DATA_TOK }}
         OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
         EXTERNAL_APPLICATION_KEY: ${{ secrets.EXTERNAL_APPLICATION_KEY }}
         EXTERNAL_API_KEY: ${{ secrets.EXTERNAL_API_KEY }}
