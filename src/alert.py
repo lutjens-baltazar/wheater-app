@@ -19,6 +19,17 @@ WHATSAPP_API_URL = os.getenv("WHATSAPP_API_URL")
 WHATSAPP_PHONE = os.getenv("WHATSAPP_PHONE")
 WHATSAPP_API_KEY = os.getenv("WHATSAPP_API_KEY")
 
+# Whatsapp keys
+WHATSAPP_PHONE_2 = os.getenv("WHATSAPP_PHONE_2")
+WHATSAPP_API_KEY_2 = os.getenv("WHATSAPP_API_KEY_2")
+WHATSAPP_PHONE_3 = os.getenv("WHATSAPP_PHONE_3")
+WHATSAPP_API_KEY_3 = os.getenv("WHATSAPP_API_KEY_3")
+WHATSAPP_PHONE_4 = os.getenv("WHATSAPP_PHONE_4")
+WHATSAPP_API_KEY_4 = os.getenv("WHATSAPP_API_KEY_4")
+WHATSAPP_PHONE_5 = os.getenv("WHATSAPP_PHONE_5")
+WHATSAPP_API_KEY_5 = os.getenv("WHATSAPP_API_KEY_5")
+WHATSAPP_PHONE_6 = os.getenv("WHATSAPP_PHONE_6")
+WHATSAPP_API_KEY_6 = os.getenv("WHATSAPP_API_KEY_6")
 
 
 # Configuration
@@ -123,20 +134,47 @@ def process_historical_data(historical_data):
     return alerts
 
 def send_whatsapp_message(message):
-    """Send message through CallMeBot WhatsApp API"""
-    try:
-        params = {
-            'phone': WHATSAPP_PHONE,
-            'text': message,
-            'apikey': WHATSAPP_API_KEY
-        }
-        response = requests.get(WHATSAPP_API_URL, params=params)
-        print(f"WhatsApp Message Status Code: {response.status_code}")
-        return response.status_code == 200
-    except Exception as e:
-        print(f"Error sending WhatsApp message: {e}")
-        return False
-
+    """Send message through CallMeBot WhatsApp API to all configured recipients"""
+    successful_sends = 0
+    failed_sends = 0
+    
+    # List of recipient configurations
+    recipients = [
+        (WHATSAPP_PHONE, WHATSAPP_API_KEY),
+        (WHATSAPP_PHONE_2, WHATSAPP_API_KEY_2),
+        (WHATSAPP_PHONE_3, WHATSAPP_API_KEY_3),
+        (WHATSAPP_PHONE_4, WHATSAPP_API_KEY_4),
+        (WHATSAPP_PHONE_5, WHATSAPP_API_KEY_5),
+        (WHATSAPP_PHONE_6, WHATSAPP_API_KEY_6)
+    ]
+    
+    for phone, api_key in recipients:
+        if not phone or not api_key:
+            continue
+            
+        try:
+            params = {
+                'phone': phone,
+                'text': message,
+                'apikey': api_key
+            }
+            response = requests.get(WHATSAPP_API_URL, params=params)
+            print(f"WhatsApp Message Status Code for {phone}: {response.status_code}")
+            
+            if response.status_code == 200:
+                successful_sends += 1
+            else:
+                failed_sends += 1
+                
+        except Exception as e:
+            print(f"Error sending WhatsApp message to {phone}: {e}")
+            failed_sends += 1
+    
+    print(f"\n📱 Resumen de envíos:")
+    print(f"✅ Enviados correctamente: {successful_sends}")
+    print(f"❌ Fallidos: {failed_sends}")
+    
+    return successful_sends > 0
 
 def main():
     mensajes = []
