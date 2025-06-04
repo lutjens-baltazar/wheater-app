@@ -1,0 +1,27 @@
+{
+  "best_match": {
+    "model_name": "best_match",
+    "accuracy_count": 0,
+    "total_predictions": 0
+  },
+  "gfs_seamless": {
+    "model_name": "gfs_seamless",
+    "accuracy_count": 0,
+    "total_predictions": 0
+  },
+  "ecmwf_ifs04": {
+    "model_name": "ecmwf_ifs04",
+    "accuracy_count": 0,
+    "total_predictions": 0
+  },
+  "metno_nordic": {
+    "model_name": "metno_nordic",
+    "accuracy_count": 0,
+    "total_predictions": 0
+  },
+  "gem_seamless": {
+    "model_name": "gem_seamless",
+    "accuracy_count": 0,
+    "total_predictions": 0
+  }
+}

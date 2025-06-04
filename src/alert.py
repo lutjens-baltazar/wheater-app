@@ -37,8 +37,8 @@ LAT = "-40.9286360"
 LON = "-73.3587130"
 WIND_SPEED_MIN = 2.5  # in m/s
 WIND_SPEED_MAX = 5.0  # in m/s
-WIND_DIRECTION_MIN = 240  # South
-WIND_DIRECTION_MAX = 300  # West
+WIND_DIRECTION_MIN = 230 # west 
+WIND_DIRECTION_MAX = 280 #n north west
 
 # Initialize weather models
 weather_models = [
@@ -83,9 +83,9 @@ def check_wind_conditions(wind_speed, wind_direction):
             WIND_DIRECTION_MIN <= float(wind_direction) <= WIND_DIRECTION_MAX)
 
 def translate_wind_direction(direction):
-    if 270 <= float(direction) <= 300:
+    if 250 <= float(direction) <= 280:
         return "dirección escuela"
-    elif 240 <= float(direction) < 270:
+    elif 220 <= float(direction) < 250:
         return "dirección plaza"
     return f"dirección {direction}°"
 
