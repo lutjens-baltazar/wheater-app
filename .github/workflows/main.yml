@@ -36,5 +36,16 @@ jobs:
         WHATSAPP_API_URL: ${{ secrets.WHATSAPP_API_URL }}
         WHATSAPP_PHONE: ${{ secrets.WHATSAPP_PHONE }}
         WHATSAPP_API_KEY: ${{ secrets.WHATSAPP_API_KEY }}
+        WHATSAPP_PHONE_2: ${{ secrets.WHATSAPP_PHONE_2 }}
+        WHATSAPP_API_KEY_2: ${{ secrets.WHATSAPP_API_KEY_2 }}
+        WHATSAPP_PHONE_3: ${{ secrets.WHATSAPP_PHONE_3 }}
+        WHATSAPP_API_KEY_3: ${{ secrets.WHATSAPP_API_KEY_3 }}
+        WHATSAPP_PHONE_4: ${{ secrets.WHATSAPP_PHONE_4 }}
+        WHATSAPP_API_KEY_4: ${{ secrets.WHATSAPP_API_KEY_4 }}
+        WHATSAPP_PHONE_5: ${{ secrets.WHATSAPP_PHONE_5 }}
+        WHATSAPP_API_KEY_5: ${{ secrets.WHATSAPP_API_KEY_5 }}
+        WHATSAPP_PHONE_6: ${{ secrets.WHATSAPP_PHONE_6 }}
+        WHATSAPP_API_KEY_6: ${{ secrets.WHATSAPP_API_KEY_6 }}
+        
       run: python src/alert.py
 
